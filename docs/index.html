@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond Rigid Hands</title>
+<meta name="description" content="Beyond Rigid Hands lifts annotated or estimated rigid hand meshes to contact-consistent ones by slightly adjusting the joints and wrist and deforming the skin onto the object, while keeping the MANO topology and nearly the original pose.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Beyond Rigid Hands: Deforming Skin into Contact-Consistent Hand Meshes">
+<meta property="og:description" content="We lift annotated or estimated rigid hands to meshes whose skin settles onto the object, while the pose stays nearly unchanged.">
+<meta property="og:url" content="https://shpark97.github.io/BeyondRigidHands/">
+<meta property="og:image" content="https://shpark97.github.io/BeyondRigidHands/static/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fff'/%3E%3Crect x='3' y='21' width='26' height='8' rx='2' fill='%23859fc9' opacity='.55'/%3E%3Crect x='11' y='2.5' width='10' height='20' rx='5' fill='%23deab8c'/%3E%3Crect x='9.5' y='19.6' width='13' height='2.8' rx='1.4' fill='%231f9945'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="static/css/style.css?v=20261125a">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">Beyond Rigid Hands</a>
+    <div class="nav-links">
+      <a href="#lift">Lift</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap" id="top">
+  <div class="badge">Preprint · 2026</div>
+  <h1>Beyond Rigid Hands</h1>
+  <p class="subtitle">Deforming Skin into Contact-Consistent Hand Meshes</p>
+  <p class="authors"><a href="https://shpark97.github.io/" target="_blank" rel="noopener">Seonghwan Park</a><a href="https://scholar.google.com/citations?user=VUj1ZWoAAAAJ&amp;hl=en" target="_blank" rel="noopener">Min-Gyu Park</a></p>
+  <p class="affil">Korea Electronics Technology Institute (KETI)</p>
+  <div class="buttons">
+    <!-- Code is not a link until released. Then replace its span with
+         <a class="btn" href="https://github.com/shpark97/BeyondRigidHands">…Code</a> -->
+    <a class="btn" href="https://arxiv.org/abs/2611.31950" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Paper</a>
+    <span class="btn disabled" aria-disabled="true" title="Coming soon">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></svg>Code <span class="soon">soon</span></span>
+    <a class="btn" href="#bibtex">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5H6.5A1.5 1.5 0 0 0 5 6.5v3A1.5 1.5 0 0 1 3.5 11h0A1.5 1.5 0 0 1 5 12.5v5A1.5 1.5 0 0 0 6.5 19H8M16 5h1.5A1.5 1.5 0 0 1 19 6.5v3a1.5 1.5 0 0 0 1.5 1.5h0a1.5 1.5 0 0 0-1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H16"/></svg>BibTeX</a>
+  </div>
+  <p class="tldr"><b>TL;DR.</b> Rigid hand meshes in datasets and estimators hover above or penetrate objects. Since this stems from the rigid skin rather than the pose, we <strong>lift</strong> these hands to contact-consistent meshes in three stages: (i) kinematic seating places the fingers on the object, (ii) skin deformation conforms the skin to its surface, and (iii) a temporal prior maintains consistent contact across frames. This yields more stable grasps over time.</p>
+  <div class="pills">
+    <span class="pill">Deformable Skin</span><span class="pill">Contact Consistency</span><span class="pill">Stable Grasps</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ============================================================ lift -->
+<section id="lift" class="wrap first">
+  <div class="stage" data-viewer="lift" data-scenes="lift_dexycb_000115,lift_dexycb_000359,lift_dexycb_000126">
+    <div class="stage-view">
+      <canvas aria-label="Interactive 3-D view of a hand grasping an object"></canvas>
+      <div class="legend">
+        <span><i style="background:var(--red)"></i>Inside the object</span>
+        <span><i style="background:var(--green)"></i>On the surface</span>
+      </div>
+      <div class="tools">
+        <button type="button" class="tool" data-act="object" aria-pressed="true">Object</button>
+        <button type="button" class="tool" data-act="reset">Reset view</button>
+      </div>
+      <div class="hint">Drag to orbit</div>
+      <div class="loading">Loading mesh…</div>
+    </div>
+    <div class="stage-panel">
+      <div class="panel-head">
+        <p class="panel-title">Lifting a dataset annotation</p>
+        <button type="button" class="play" data-act="play" aria-pressed="true"><span class="play-ic"></span><span class="play-tx">Pause</span></button>
+      </div>
+      <ol class="steps">
+        <li><button type="button" class="step" data-state="0" aria-pressed="true">
+          <span class="step-n">1</span>
+          <span class="step-b"><b>Rigid annotation</b><small>The rigid mesh penetrates the object.</small></span></button></li>
+        <li><button type="button" class="step" data-state="1" aria-pressed="false">
+          <span class="step-n">2</span>
+          <span class="step-b"><b>Kinematic seating</b><small>Small joint and wrist adjustments bring the fingers onto the object.</small></span></button></li>
+        <li><button type="button" class="step" data-state="2" aria-pressed="false">
+          <span class="step-n">3</span>
+          <span class="step-b"><b>Skin deformation</b><small>The penetrating skin settles onto the surface.</small></span></button></li>
+      </ol>
+      <dl class="readouts">
+        <div class="readout"><dt><i style="background:var(--green)"></i>On the surface<small>vertices within 1 mm</small></dt><dd data-readout="on">–</dd></div>
+        <div class="readout"><dt><i style="background:var(--red)"></i>Inside the object<small>vertices deeper than 1 mm</small></dt><dd data-readout="ins">–</dd></div>
+      </dl>
+      <div class="examples-grid" data-thumbs></div>
+    </div>
+  </div>
+
+  <div class="kpis" data-kpis="lift">
+    <div class="kpis-head">
+      <div class="tabs" role="tablist" data-tabs="kpi">
+        <button type="button" role="tab" aria-selected="true" data-tab="DexYCB">DexYCB</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="OakInk">OakInk</button>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-n"><span data-k="c2a"></span><i>→</i><b data-k="c2b"></b><small>%</small></div><div class="kpi-l">Skin on the surface</div></div>
+      <div class="kpi"><div class="kpi-n"><span data-k="na"></span><i>→</i><b data-k="nb"></b></div><div class="kpi-l">Deeply penetrating vertices</div></div>
+      <div class="kpi"><div class="kpi-n"><span data-k="fa"></span><i>→</i><b data-k="fb"></b><small>%</small></div><div class="kpi-l" title="Share of the object's weight that the contacts cannot balance">Grasp instability</div></div>
+    </div>
+  </div>
+  <p class="kpi-more">From the rigid annotation to its lift. Estimated hands and clips follow in <a href="#results">Results</a> below.</p>
+</section>
+
+<!-- ============================================================ method -->
+<section id="method" class="wrap">
+  <div class="sec-head">
+    <span class="kicker">Method</span>
+    <h2>Lifting a rigid hand in three stages</h2>
+  </div>
+  <div class="cards3">
+    <article class="card">
+      <div class="card-fig"><img src="static/img/method_seating.webp" width="1100" height="669" alt="Schematic of kinematic seating: the annotated finger bends toward the object and presses slightly into it" loading="lazy"></div>
+      <div class="card-b">
+        <span class="tag">Stage 1</span>
+        <h3>Kinematic seating</h3>
+        <p>The joints and wrist adjust slightly so that each finger reaches the object and presses lightly into it.</p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-fig"><img src="static/img/method_deform.webp" width="900" height="685" alt="Schematic of skin deformation: a displacement pushes the penetrating skin back onto the object surface as a flat contact patch" loading="lazy"></div>
+      <div class="card-b">
+        <span class="tag">Stage 2</span>
+        <h3>Skin deformation</h3>
+        <p>With the pose fixed, the skin deforms so that penetrating regions settle onto the surface without stretching.</p>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-fig"><img src="static/img/method_temporal.webp" width="951" height="688" alt="Schematic of the temporal prior: per-frame lifts change between frames, the sequence-level lift stays consistent" loading="lazy"></div>
+      <div class="card-b">
+        <span class="tag">Stage 3</span>
+        <h3>Temporal prior</h3>
+        <p>All frames of a clip are optimized jointly, which keeps the contact patch stable over time.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ results -->
+<section id="results" class="wrap">
+  <div class="sec-head">
+    <span class="kicker">Results</span>
+    <h2>More contact, nearly the same pose</h2>
+  </div>
+
+  <!-- 01 -->
+  <div class="chapter"><span class="num">01</span><h3>Refining estimated hands</h3><p>Existing refiners adjust the pose, which moves the hand away from the estimate yet leaves less skin on the object. Our lift instead keeps the estimated pose and deforms the skin onto the surface.</p></div>
+  <div class="mv" data-viewer="est">
+    <div class="mv-view"><canvas aria-label="An estimated hand and its refinements by ContactOpt, GeneOH Diffusion, and our lift, in 3-D"></canvas><div class="loading">Loading mesh…</div></div>
+    <div class="mv-bar">
+      <div class="legend inline">
+        <span><i style="background:var(--red)"></i>Inside the object</span>
+        <span><i style="background:var(--green)"></i>On the surface</span>
+        <span class="muted">A VPHO estimate on a DexYCB test frame.</span>
+      </div>
+      <div class="tools inline">
+        <button type="button" class="tool" data-act="object" aria-pressed="true">Object</button>
+        <button type="button" class="tool" data-act="reset">Reset view</button>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-head">
+      <p>Refinement of each estimator's predictions on DexYCB.</p>
+      <div class="tabs" role="tablist" data-tabs="est">
+        <button type="button" role="tab" aria-selected="true" data-tab="HOISDF">HOISDF</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="UniHOPE">UniHOPE</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="VPHO">VPHO</button>
+      </div>
+    </div>
+    <div class="chart" data-chart="est"></div>
+  </div>
+
+  <!-- 02 -->
+  <div class="chapter"><span class="num">02</span><h3>Learning where hands should touch</h3><p>Geometry alone misses contact where an estimated finger stops short of the object. A lightweight head trained on lifted annotations predicts where the skin should touch, and guiding the lift with it closes these gaps and improves grasp stability.</p></div>
+  <div class="mv" data-viewer="head" data-scenes="head_075200,head_031851">
+    <div class="mv-view"><canvas aria-label="First test frame: contact predicted on an estimated hand from geometry, from the learned head, and in the lifted annotation, in 3-D"></canvas><div class="loading">Loading mesh…</div></div>
+    <div class="mv-view"><canvas aria-label="Second test frame: contact predicted on an estimated hand from geometry, from the learned head, and in the lifted annotation, in 3-D"></canvas><div class="loading">Loading mesh…</div></div>
+    <div class="mv-bar">
+      <div class="legend inline">
+        <span><i style="background:var(--green)"></i>Predicted contact</span>
+      </div>
+      <div class="tools inline">
+        <button type="button" class="tool" data-act="object" aria-pressed="false">Object</button>
+        <button type="button" class="tool" data-act="reset">Reset view</button>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-head">
+      <p>Geometry alone versus the learned head on DexYCB.</p>
+      <div class="chart-legend"><span><i class="dot a"></i>Geometry alone</span><span><i class="dot b"></i>With the head</span></div>
+    </div>
+    <div class="chart" data-chart="head"></div>
+  </div>
+
+  <!-- 03 -->
+  <div class="chapter"><span class="num">03</span><h3>Agreement with thermal contact</h3><p>Thermal imprints record where a real hand touched the object. The lift recovers contact that the rigid annotation misses without sacrificing precision, a gain that neither a larger rigid contact nor pose refinement achieves.</p></div>
+  <div class="mv" data-viewer="thermal">
+    <div class="mv-view"><canvas aria-label="Thermal contact on a camera and the contact of the rigid annotation, ContactOpt, and our lift, in 3-D"></canvas><div class="loading">Loading mesh…</div></div>
+    <div class="mv-bar">
+      <div class="legend inline">
+        <span><i style="background:#c81e1e"></i>Measured heat</span>
+        <span><i style="background:#3ea055"></i>Correct</span>
+        <span><i style="background:#466ec8"></i>Missed</span>
+        <span><i style="background:#f08c28"></i>False</span>
+      </div>
+      <div class="tools inline">
+        <button type="button" class="tool" data-act="hand" aria-pressed="false">Hand</button>
+        <button type="button" class="tool" data-act="reset">Reset view</button>
+      </div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-head"><p>Agreement with thermal contact on 1,766 ContactPose grasps.</p></div>
+    <div class="chart" data-chart="thermal"></div>
+  </div>
+
+  <!-- 04 -->
+  <div class="chapter"><span class="num">04</span><h3>Consistent over time</h3><p>Lifting each frame independently makes the skin flicker even when the grasp barely changes. The temporal prior couples the frames of a clip, so each indentation persists as the fingers move while the skin stays on the object.</p></div>
+  <div class="mv" data-viewer="seq">
+    <div class="mv-view"><canvas aria-label="A DexYCB clip lifted frame by frame and with the temporal prior, in 3-D"></canvas><div class="loading">Loading mesh…</div></div>
+    <div class="mv-bar player">
+      <button type="button" class="play" data-act="play" aria-pressed="true"><span class="play-ic"></span><span class="play-tx">Pause</span></button>
+      <input type="range" class="scrub" min="0" max="44" step="0.01" value="0" aria-label="Frame of the clip">
+      <span class="frame" data-frame>1 / 45</span>
+      <div class="legend inline scale"><span>Inward</span><i class="grad"></i><span>Outward</span></div>
+    </div>
+    <div class="trace">
+      <div class="trace-head">
+        <p>Frame-to-frame change of the deformation</p>
+        <div class="chart-legend"><span><i class="key a"></i>Per-frame</span><span><i class="key b"></i>Sequence-level</span></div>
+      </div>
+      <div class="trace-plot" data-trace></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-head">
+      <p>Temporal consistency and contact on held-out clips.</p>
+      <div class="tabs" role="tablist" data-tabs="seq">
+        <button type="button" role="tab" aria-selected="true" data-tab="DexYCB">DexYCB</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="OakInk">OakInk</button>
+      </div>
+    </div>
+    <div class="chart" data-chart="seq"></div>
+  </div>
+</section>
+
+<!-- ============================================================ bibtex -->
+<section id="bibtex" class="wrap">
+  <div class="sec-head bib-head">
+    <span class="kicker">Citation</span>
+  </div>
+  <div class="bib">
+    <button type="button" class="copy" data-copy="#bib">Copy</button>
+<pre id="bib">@article{park2026beyond,
+  title   = {Beyond Rigid Hands: Deforming Skin into Contact-Consistent Hand Meshes},
+  author  = {Park, Seonghwan and Park, Min-Gyu},
+  journal = {arXiv preprint arXiv:2611.31950},
+  year    = {2026}
+}</pre>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <p class="fine">© 2026 The authors.</p>
+  </div>
+</footer>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+
+<!-- bump ?v= whenever these files change: browsers keep the old ones otherwise -->
+<script src="static/js/viewer.js?v=20261123a"></script>
+<script src="static/js/main.js?v=20261118b"></script>
+</body>
+</html>
